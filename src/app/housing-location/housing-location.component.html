@@ -2,8 +2,9 @@
     housing-location works!
 </p> -->
 <section class="listing">
-    <img class="listing-photo" [src]="housingLocation.photo" alt="Exterior photo of {{ housingLocation.name }}"
+    <img class="listing-photo" [src]="childHousingLocation.photo" alt="Exterior photo of {{ childHousingLocation.name }}"
         crossorigin />
-    <h2 class="listing-heading">{{ housingLocation.name }}</h2>
-    <p class="listing-location">{{ housingLocation.city }}, {{ housingLocation.state }}</p>
+    <h2 class="listing-heading">{{ childHousingLocation.name }}</h2>
+    <p class="listing-location">{{ childHousingLocation.city }}, {{ childHousingLocation.state }}</p>
+    <a [routerLink]="['/details', childHousingLocation.id]">Learn More</a>
 </section>

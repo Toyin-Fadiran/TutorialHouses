@@ -1,4 +1,5 @@
 export interface HousingLocation {
+    //HousingLocation.id;
     id: number;
     name: string;
     city: string;
