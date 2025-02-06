@@ -36,11 +36,11 @@ import {
   withI18nSupport,
   withIncrementalHydration,
   withNoHttpTransferCache
-} from "./chunk-OJEWLTJ3.js";
+} from "./chunk-ZFDWZHPA.js";
 import {
   getDOM
-} from "./chunk-J3L2LTDM.js";
-import "./chunk-COCS37L2.js";
+} from "./chunk-H7CEYIRM.js";
+import "./chunk-N243NQOM.js";
 export {
   BrowserModule,
   By,
@@ -81,4 +81,3 @@ export {
   getDOM as ɵgetDOM,
   initDomAdapter as ɵinitDomAdapter
 };
-//# sourceMappingURL=@angular_platform-browser.js.map

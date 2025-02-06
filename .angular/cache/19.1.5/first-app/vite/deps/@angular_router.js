@@ -1,6 +1,6 @@
 import {
   Title
-} from "./chunk-OJEWLTJ3.js";
+} from "./chunk-ZFDWZHPA.js";
 import {
   DOCUMENT,
   HashLocationStrategy,
@@ -9,7 +9,7 @@ import {
   LocationStrategy,
   PathLocationStrategy,
   ViewportScroller
-} from "./chunk-J3L2LTDM.js";
+} from "./chunk-H7CEYIRM.js";
 import {
   APP_BOOTSTRAP_LISTENER,
   APP_INITIALIZER,
@@ -22,6 +22,7 @@ import {
   ConnectableObservable,
   Console,
   ContentChildren,
+  DestroyRef,
   Directive,
   EMPTY,
   ENVIRONMENT_INITIALIZER,
@@ -31,7 +32,6 @@ import {
   EventEmitter,
   HostBinding,
   HostListener,
-  Inject,
   InjectFlags,
   Injectable,
   InjectionToken,
@@ -111,7 +111,7 @@ import {
   ɵɵloadQuery,
   ɵɵqueryRefresh,
   ɵɵsanitizeUrlOrResourceUrl
-} from "./chunk-COCS37L2.js";
+} from "./chunk-N243NQOM.js";
 
 // node_modules/@angular/router/fesm2022/router.mjs
 var PRIMARY_OUTLET = "primary";
@@ -3590,6 +3590,7 @@ var NavigationTransitions = class _NavigationTransitions {
   transitionAbortSubject = new Subject();
   configLoader = inject(RouterConfigLoader);
   environmentInjector = inject(EnvironmentInjector);
+  destroyRef = inject(DestroyRef);
   urlSerializer = inject(UrlSerializer);
   rootContexts = inject(ChildrenOutletContexts);
   location = inject(Location);
@@ -3622,11 +3623,15 @@ var NavigationTransitions = class _NavigationTransitions {
   afterPreactivation = () => of(void 0);
   /** @internal */
   rootComponentType = null;
+  destroyed = false;
   constructor() {
     const onLoadStart = (r) => this.events.next(new RouteConfigLoadStart(r));
     const onLoadEnd = (r) => this.events.next(new RouteConfigLoadEnd(r));
     this.configLoader.onLoadEndListener = onLoadEnd;
     this.configLoader.onLoadStartListener = onLoadStart;
+    this.destroyRef.onDestroy(() => {
+      this.destroyed = true;
+    });
   }
   complete() {
     this.transitions?.complete();
@@ -3876,6 +3881,10 @@ var NavigationTransitions = class _NavigationTransitions {
             }
           }),
           catchError((e) => {
+            if (this.destroyed) {
+              overallTransitionState.resolve(false);
+              return EMPTY;
+            }
             errored = true;
             if (isNavigationCancelingError(e)) {
               this.events.next(new NavigationCancel(overallTransitionState.id, this.urlSerializer.serialize(overallTransitionState.extractedUrl), e.message, e.cancellationCode));
@@ -4204,20 +4213,17 @@ var HistoryStateManager = class _HistoryStateManager extends StateManager {
     }]
   }], null, null);
 })();
-var NavigationResult;
-(function(NavigationResult2) {
-  NavigationResult2[NavigationResult2["COMPLETE"] = 0] = "COMPLETE";
-  NavigationResult2[NavigationResult2["FAILED"] = 1] = "FAILED";
-  NavigationResult2[NavigationResult2["REDIRECTING"] = 2] = "REDIRECTING";
-})(NavigationResult || (NavigationResult = {}));
 function afterNextNavigation(router, action) {
   router.events.pipe(filter((e) => e instanceof NavigationEnd || e instanceof NavigationCancel || e instanceof NavigationError || e instanceof NavigationSkipped), map((e) => {
     if (e instanceof NavigationEnd || e instanceof NavigationSkipped) {
-      return NavigationResult.COMPLETE;
+      return 0;
     }
     const redirecting = e instanceof NavigationCancel ? e.code === NavigationCancellationCode.Redirect || e.code === NavigationCancellationCode.SupersededByNewNavigation : false;
-    return redirecting ? NavigationResult.REDIRECTING : NavigationResult.FAILED;
-  }), filter((result) => result !== NavigationResult.REDIRECTING), take(1)).subscribe(() => {
+    return redirecting ? 2 : 1;
+  }), filter(
+    (result) => result !== 2
+    /* NavigationResult.REDIRECTING */
+  ), take(1)).subscribe(() => {
     action();
   });
 }
@@ -4429,7 +4435,7 @@ var Router = class _Router {
    *
    * @usageNotes
    *
-   * ```
+   * ```ts
    * router.resetConfig([
    *  { path: 'team/:id', component: TeamCmp, children: [
    *    { path: 'simple', component: SimpleCmp },
@@ -4449,6 +4455,7 @@ var Router = class _Router {
   }
   /** Disposes of the router. */
   dispose() {
+    this._events.unsubscribe();
     this.navigationTransitions.complete();
     if (this.nonRouterCurrentEntryChangeSubscription) {
       this.nonRouterCurrentEntryChangeSubscription.unsubscribe();
@@ -4554,7 +4561,7 @@ var Router = class _Router {
    *
    * The following calls request navigation to an absolute path.
    *
-   * ```
+   * ```ts
    * router.navigateByUrl("/team/33/user/11");
    *
    * // Navigate without updating the URL
@@ -4591,7 +4598,7 @@ var Router = class _Router {
    *
    * The following calls request navigation to a dynamic route path relative to the current URL.
    *
-   * ```
+   * ```ts
    * router.navigate(['team', 33, 'user', 11], {relativeTo: route});
    *
    * // Navigate without updating the URL, overriding the default behavior
@@ -5077,7 +5084,7 @@ var RouterLinkActive = class _RouterLinkActive {
    * true  -> Route is active
    * false -> Route is inactive
    *
-   * ```
+   * ```html
    * <a
    *  routerLink="/user/bob"
    *  routerLinkActive="active-link"
@@ -5687,7 +5694,7 @@ function withViewTransitions(options) {
   return routerFeature(9, providers);
 }
 var ROUTER_DIRECTIVES = [RouterOutlet, RouterLink, RouterLinkActive, ɵEmptyOutletComponent];
-var ROUTER_FORROOT_GUARD = new InjectionToken(typeof ngDevMode === "undefined" || ngDevMode ? "router duplicate forRoot guard" : "ROUTER_FORROOT_GUARD");
+var ROUTER_FORROOT_GUARD = new InjectionToken(typeof ngDevMode === "undefined" || ngDevMode ? "router duplicate forRoot guard" : "");
 var ROUTER_PROVIDERS = [
   Location,
   {
@@ -5710,7 +5717,12 @@ var ROUTER_PROVIDERS = [
   } : []
 ];
 var RouterModule = class _RouterModule {
-  constructor(guard) {
+  constructor() {
+    if (typeof ngDevMode === "undefined" || ngDevMode) {
+      inject(ROUTER_FORROOT_GUARD, {
+        optional: true
+      });
+    }
   }
   /**
    * Creates and configures a module with all the router providers and directives.
@@ -5718,7 +5730,7 @@ var RouterModule = class _RouterModule {
    *
    * When registering the NgModule at the root, import as follows:
    *
-   * ```
+   * ```ts
    * @NgModule({
    *   imports: [RouterModule.forRoot(ROUTES)]
    * })
@@ -5737,11 +5749,11 @@ var RouterModule = class _RouterModule {
         provide: ROUTES,
         multi: true,
         useValue: routes
-      }, {
+      }, typeof ngDevMode === "undefined" || ngDevMode ? {
         provide: ROUTER_FORROOT_GUARD,
         useFactory: provideForRootGuard,
         deps: [[Router, new Optional(), new SkipSelf()]]
-      }, config?.errorHandler ? {
+      } : [], config?.errorHandler ? {
         provide: NAVIGATION_ERROR_HANDLER,
         useValue: config.errorHandler
       } : [], {
@@ -5755,7 +5767,7 @@ var RouterModule = class _RouterModule {
    * without creating a new Router service.
    * When registering for submodules and lazy-loaded submodules, create the NgModule as follows:
    *
-   * ```
+   * ```ts
    * @NgModule({
    *   imports: [RouterModule.forChild(ROUTES)]
    * })
@@ -5777,7 +5789,7 @@ var RouterModule = class _RouterModule {
     };
   }
   static ɵfac = function RouterModule_Factory(__ngFactoryType__) {
-    return new (__ngFactoryType__ || _RouterModule)(ɵɵinject(ROUTER_FORROOT_GUARD, 8));
+    return new (__ngFactoryType__ || _RouterModule)();
   };
   static ɵmod = ɵɵdefineNgModule({
     type: _RouterModule,
@@ -5793,15 +5805,7 @@ var RouterModule = class _RouterModule {
       imports: ROUTER_DIRECTIVES,
       exports: ROUTER_DIRECTIVES
     }]
-  }], () => [{
-    type: void 0,
-    decorators: [{
-      type: Optional
-    }, {
-      type: Inject,
-      args: [ROUTER_FORROOT_GUARD]
-    }]
-  }], null);
+  }], () => [], null);
 })();
 function provideRouterScroller() {
   return {
@@ -5832,7 +5836,7 @@ function providePathLocationStrategy() {
   };
 }
 function provideForRootGuard(router) {
-  if ((typeof ngDevMode === "undefined" || ngDevMode) && router) {
+  if (router) {
     throw new RuntimeError(4007, `The Router was provided more than once. This can happen if 'forRoot' is used outside of the root injector. Lazy loaded modules should use RouterModule.forChild() instead.`);
   }
   return "guarded";
@@ -5871,7 +5875,7 @@ function mapToCanDeactivate(providers) {
 function mapToResolve(provider) {
   return (...params) => inject(provider).resolve(...params);
 }
-var VERSION = new Version("19.0.6");
+var VERSION = new Version("19.1.4");
 function getLoadedRoutes(route) {
   return route._loadedRoutes;
 }
@@ -5960,7 +5964,7 @@ export {
 
 @angular/router/fesm2022/router.mjs:
   (**
-   * @license Angular v19.0.6
+   * @license Angular v19.1.4
    * (c) 2010-2024 Google LLC. https://angular.io/
    * License: MIT
    *)
